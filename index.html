@@ -102,6 +102,10 @@ cite{display:block;font-size:.9rem;margin-top:8px;opacity:.8}
 #prev{animation-name:nudgeL}
 @keyframes nudge{50%{transform:translateX(4px)}}@keyframes nudgeL{50%{transform:translateX(-4px)}}
 .dots{display:flex;gap:8px}.dots i{width:9px;height:9px;border-radius:50%;background:var(--ink);opacity:.25;transition:.3s}.dots i.on{opacity:1;background:var(--purple);transform:scale(1.4)}
+/* botão de música */
+.music{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;z-index:10;width:42px;height:42px;border:0;border-radius:50%;background:var(--purple);color:#fff;font-size:1.1rem;cursor:pointer;box-shadow:0 4px 10px rgba(60,40,80,.3);opacity:0;pointer-events:none;transition:opacity .8s 1.2s;-webkit-tap-highlight-color:transparent}
+.opened .music{opacity:1;pointer-events:auto}
+.music:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 /* portas 3D */
 .doors{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .2s;z-index:3}
 .door{position:absolute;top:0;bottom:0;width:50%;transition:transform 1.9s cubic-bezier(.6,.05,.2,1) .55s,opacity .6s 2.1s;backface-visibility:hidden;box-shadow:0 0 40px rgba(0,0,0,.25);overflow:hidden}
@@ -142,6 +146,8 @@ cite{display:block;font-size:.9rem;margin-top:8px;opacity:.8}
 </head>
 <body>
 <main class="stage" id="stage">
+  <audio id="bgm" src="https://nu7jvhas9fuvlkrz.public.blob.vercel-storage.com/gender-reveal-music.mp3" loop preload="auto"></audio>
+  <button class="music" id="music" aria-label="Ligar ou desligar a música" aria-pressed="false">🔇</button>
   <div id="bg"></div>
   <section class="invite" aria-label="Convite">
     <div class="pages" id="pages">
@@ -185,6 +191,19 @@ const $=id=>document.getElementById(id);
 const stage=$('stage'),seal=$('seal'),doors=$('doors'),pages=$('pages'),bg=$('bg');
 const dots=[...document.querySelectorAll('#dots i')],pg=[...document.querySelectorAll('.page')];
 
+// trilha sonora
+const bgm=$('bgm'),mus=$('music');
+let wantMusic=false;
+bgm.volume=.6;
+bgm.addEventListener('play',()=>{mus.textContent='🔊';mus.setAttribute('aria-pressed','true')});
+bgm.addEventListener('pause',()=>{mus.textContent='🔇';mus.setAttribute('aria-pressed','false')});
+mus.onclick=()=>{wantMusic=bgm.paused;bgm.paused?bgm.play().catch(()=>{}):bgm.pause()};
+// pausa ao sair da aba/app e retoma ao voltar (se o convidado não tiver silenciado)
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)bgm.pause();
+  else if(wantMusic)bgm.play().catch(()=>{});
+});
+
 function balloon(p,n){
  const env='M50 4C82 4 96 30 92 52C89 68 70 82 60 90L40 90C30 82 11 68 8 52C4 30 18 4 50 4Z',cuts=[-50,-30,-10,10,30,50];
  const cv=o=>'M50 4C'+(50+o*1.15)+' 22 '+(50+o*1.05)+' 60 '+(50+o*.3)+' 90';
@@ -226,6 +245,7 @@ stage.addEventListener('pointermove',e=>{if(stage.classList.contains('opened'))r
 function burst(list,n,fn){for(let i=0;i<n;i++){const b=document.createElement('span');b.className='bit';fn(b,i);doors.appendChild(b)}}
 seal.addEventListener('click',()=>{
   if(seal.classList.contains('cracking'))return;
+  wantMusic=true;bgm.play().catch(()=>{});
   doors.style.transform='';seal.classList.add('cracking');
   setTimeout(()=>{
     stage.classList.add('opened');
